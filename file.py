@@ -7,7 +7,6 @@ import os
 def generate_key():
     """Generates and saves an encryption key."""
     key = Fernet.generate_key()
-    # Avoid saving the key in a file for better security (environment variable is preferred in production)
     os.environ["FERNET_KEY"] = key.decode()  # Save the key in environment variable
     print("Encryption key generated and saved to environment variable.")
 
