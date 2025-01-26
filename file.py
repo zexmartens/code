@@ -1,21 +1,22 @@
 from cryptography.fernet import Fernet
 import matplotlib.pyplot as plt
 import csv
+import os
 
 # Key Management
 def generate_key():
     """Generates and saves an encryption key."""
     key = Fernet.generate_key()
-    with open("encryption_key.key", "wb") as key_file:
-        key_file.write(key)
-    print("Encryption key generated and saved to 'encryption_key.key'.")
+    # Avoid saving the key in a file for better security (environment variable is preferred in production)
+    os.environ["FERNET_KEY"] = key.decode()  # Save the key in environment variable
+    print("Encryption key generated and saved to environment variable.")
 
 def load_key():
-    """Loads the encryption key."""
-    try:
-        with open("encryption_key.key", "rb") as key_file:
-            return key_file.read()
-    except FileNotFoundError:
+    """Loads the encryption key from the environment variable."""
+    key = os.getenv("FERNET_KEY")
+    if key:
+        return key.encode()
+    else:
         print("Encryption key not found. Please generate a key first.")
         return None
 
@@ -30,7 +31,7 @@ def decrypt_data(encrypted_data, key):
     fernet = Fernet(key)
     return fernet.decrypt(encrypted_data).decode()
 
-class Product: # Product Class
+class Product:
     def __init__(self, product_id, name, price, quantity):
         self.product_id = product_id
         self.name = name
@@ -41,7 +42,7 @@ class Product: # Product Class
         """Update product quantity after an order."""
         self.quantity -= quantity
 
-class Item: # Item Class
+class Item:
     def __init__(self, product, quantity):
         self.product = product
         self.quantity = quantity
@@ -50,7 +51,7 @@ class Item: # Item Class
         """Calculate the total price for the item."""
         return self.product.price * self.quantity
 
-class Customer:  # Customer Class
+class Customer:
     def __init__(self, customer_id, name, email, key):
         self.customer_id = customer_id
         self.name = encrypt_data(name, key)
@@ -86,7 +87,7 @@ class Customer:  # Customer Class
         """Registers a customer with encrypted sensitive information."""
         return Customer(customer_id, name, email, key)
 
-class PaymentGateway:  # Payment Gateway Class
+class PaymentGateway:
     def __init__(self, name):
         self.name = name
 
@@ -113,7 +114,7 @@ class PaymentGateway:  # Payment Gateway Class
         #clear the cart after the order is successfully processed
         customer.cart.clear()
 
-class OnlineShoppingSystem:  # Online Shopping System Class
+class OnlineShoppingSystem:
     def __init__(self):
         self.inventory = {} #store inventory
         self.orders = []  #store orders
@@ -199,20 +200,21 @@ class OnlineShoppingSystem:  # Online Shopping System Class
         plt.show()
         print("Orders graph saved as 'orders_plot.png'.")
 
-#driver code
+# Driver code
 user_choice = input("Do you want to generate a new encryption key? (yes/no): ").strip().lower()
 if user_choice == "yes":
     generate_key()
 
-key = load_key() #load encryption key
+key = load_key()  # Load encryption key
 if not key:
     print("Key loading failed. Exiting application.")
     exit()
 
-#initialize system
+# Initialize system
 oss = OnlineShoppingSystem()
 
-products = [ #add products
+# Add products to inventory
+products = [
     (1, "Mangoes", 2.5, 50), (2, "Pineapples", 3.0, 30),
     (3, "Pomegranates", 4.0, 20), (4, "Cherries", 5.0, 15),
     (5, "Watermelons", 7.0, 10), (6, "Peaches", 2.8, 25),
@@ -221,28 +223,28 @@ products = [ #add products
 for product in products:
     oss.add_product(*product)
 
-#register customers using Customer class
+# Register customers
 alice = Customer.register_customer(101, "Alice", "alice@customer.com", key)
 bob = Customer.register_customer(102, "Bob", "bob@customer.com", key)
 
 oss.customers[alice.customer_id] = alice
 oss.customers[bob.customer_id] = bob
 
-#add to cart
+# Add to cart
 alice.add_to_cart(oss.inventory[1], 5)
 alice.add_to_cart(oss.inventory[2], 3)
 bob.add_to_cart(oss.inventory[3], 4)
 
-#display inventory and checkout
+# Display inventory and checkout
 oss.display_inventory()
 alice.checkout(key, oss.payment_gateway)
 bob.checkout(key, oss.payment_gateway)
 
-#display orders and save to CSV
+# Display orders and save to CSV
 oss.display_orders()
 oss.save_customers_to_csv()
 oss.save_orders_to_csv()
 
-#plot inventory and orders
+# Plot inventory and orders
 oss.plot_inventory()
 oss.plot_orders()
